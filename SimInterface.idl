@@ -1,0 +1,95 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+/* Generate a typelib that matches what's in the C# application 
+** ContestSuperSimulator */
+
+[
+	nonextensible,
+	uuid(7C6FBCB0-C362-406C-AB9C-CC5879FC701E),
+    helpstring("One manager holds the simulation context for all radios")
+]
+dispinterface ISuperSimManager {
+    properties:
+    methods:
+    [id(101), helpstring("Use manager to get virtual radios")]
+    IDispatch* GetSimulatorForRadio([in] SHORT radioNumber);
+    [id(102), helpstring("get the CW generator. Provide ICwSidetoneNotify or NULL to disconnect.")]
+    IDispatch* GetCwSidetoneGenerator(IDispatch *CwNotify);
+};
+
+[
+	uuid(405F114C-A610-4E5E-B24E-812115F757A4),
+	nonextensible,
+    helpstring("The simulator implements a CW keyer which makes sidetone")
+]
+dispinterface ICwSidetoneSimulator{
+    properties:
+    methods:
+    [id(101), helpstring("Generate CW sidetone. or set deferred WPM")]
+    void QueueToTransmitText([in] BSTR CwMessage);
+    [id(102), helpstring("Generate CW sidetone. or set deferred WPM")]
+    void QueueWpmChange([in] SHORT WPM);
+    [id(103), propput, helpstring("Set WPM now")]
+    void WPM([in] SHORT WPM);
+    [id(104), helpstring("Abort any CW message in progress")] 
+    void AbortTransmission();
+};
+
+[
+	uuid(4A23761F-FB37-496F-A341-53516DB74654),
+	nonextensible,
+    helpstring("source interface for the CW Simulator. If logger wants to know when message finishes")
+]
+dispinterface ICwSidetoneNotify{
+    properties:
+    methods:
+    [id(101), helpstring("Called when the sidetone generate is queued")] 
+    void CwQueued([in] LONG MessageId);
+    [id(102), helpstring("Called when the sidetone generate for SendCW finishes")] 
+    void CwFinished([in] LONG MessageId, [in] BSTR TextSent);
+};
+
+[
+	uuid(A3685033-37A3-4111-A1C0-99409BE6AB40),
+	nonextensible,
+    helpstring("Logger tells the simulator what its doing to the Radio")
+]
+dispinterface IRadioSimulator{
+    properties:
+    methods:
+    [id(101), propput, helpstring("This radio's audio goes to audio channels by mask")] 
+    void HeadphoneMask([in] SHORT ChannelMask_LeftIsLsb);
+    [id(102), propput, helpstring("Logger can tell the simulator the virtual IF center.")]
+    void CenterFrequency( [in] DOUBLE KHz);
+    [id(102), propget]
+    DOUBLE CenterFrequency();
+    [id(103), helpstring("Logger can tell the simulator to tune. Modes are CW PH RY")]
+    void SetListenFrequency( [in] DOUBLE KHz, [in] BSTR mode);
+    [id(104), helpstring("am transmitting now (not listening) on this radio")]
+    void MessageStartedNow();
+    [id(105), helpstring("Logger tells simulator what was transmitted and when it finished")]
+    void MessageCompletedNow( [in] BSTR Mode, [in] BSTR MessageText);
+    [id(106), helpstring("Logger tells simulator this radio has TX focus")]
+    void HaveTransmitFocus();
+};
+
+[
+	uuid(2AFE2F92-B85A-42AD-AB60-36A6A5C4CB2C),
+	version(1.0),
+]
+library ContestSuperSimDispLib
+{
+    dispinterface IRadioSimulator;
+    dispinterface ICwSidetoneSimulator;
+    dispinterface ICwSidetoneNotify;
+	[
+		uuid(3C9EA92A-FBEF-4746-8805-6379EA13E713)		
+	]
+	coclass SuperSimManager
+	{
+		[default] dispinterface ISuperSimManager;
+	};
+
+};
+
