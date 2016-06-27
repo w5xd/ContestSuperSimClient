@@ -7,7 +7,12 @@
 #include "SimIntefaceHelper.h"
 #include "CwSidetoneNotifyImpl.h"
 
-static void DoWithCOM();
+namespace {
+    void DoWithCOM();
+    int DemoSidetone(IKnowDispatchIsManagerPtr pMgr);
+    void DemoCwQso(IKnowDispatchIsManagerPtr pMgr);
+    void DemoRtty(IKnowDispatchIsManagerPtr pMgr);
+}
 
 int main(int argc, char* argv[])
 {
@@ -17,55 +22,150 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-static void DoWithCOM()
+namespace
 {
-    try
+    void DoWithCOM()
     {
-        ::MessageBox(0, "OK to continue", "SimClientTest", MB_OK);
-
-        // The simulator manager registers itself in the ROT when the user runs it.
-        IKnowDispatchIsManagerPtr        pAuto;
-        pAuto.GetActiveObject(__uuidof(ContestSuperSimDispLib::SuperSimManager));
-
-        if (!pAuto)
+        try
         {
-            std::cout << "SuperSimManager not active" << std::endl;
-            return;
+
+            // For the interfaces named:
+            //      IKnowDispatchIsManager
+            //      IKnowDispatchIsCwSimulator
+            //      IKnowDispatchIsRadioSimulator
+            // If we used an admin install of the interfaces, we could make
+            // Windows "marshall" the above interfaces..
+            // 
+            // But they are just IDispatch which has a built-in marshaller. Sowe just use 
+            // some goop in SimInterfaceHelper.h to convince the Microsoft C++ compiler to 
+            // attach its IDispatch helpers to an unaddorned IDispatch interface.
+
+            // The simulator manager registers itself in the ROT when the user runs it.
+            IKnowDispatchIsManagerPtr        pMgr;
+            pMgr.GetActiveObject(__uuidof(ContestSuperSimDispLib::SuperSimManager));
+
+            char c; // place to read for cin to block for user input
+            if (!pMgr)
+            {
+                std::cout << "SuperSimManager not active" << std::endl;
+                std::cin.read(&c, 1);
+                return;
+            }
+
+            // The manager object provides access to the virtual radio objects.
+            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(
+                                                            0   /* zero-based index of radio number */
+                                                            );
+
+            // The simulator puts its virtual radios on frequencies of its own choosing. See what that is:
+            std::cout << "Got radio of frequency: " << pRadio->CenterFrequency << " KHz. ENTER to continue" << std::endl;
+            std::cin.read(&c, 1);
+
+            int yesno = DemoSidetone(pMgr);
+            if (yesno == IDNO)
+            {
+                pMgr->GetCwSidetoneGenerator(0); // make simulator let go of our notifier
+                return;
+            }
+
+            DemoCwQso(pMgr);
+
+            yesno = ::MessageBox(0, "Try RTTY?", "SimClientTest", MB_YESNO);
+
+            if (yesno == IDYES)
+            {
+                DemoRtty(pMgr);
+            }
+
         }
-
-        // The manager object provides access to the virtual radio objects.
-        // It supports radios numbered zero through 3
-
-        IKnowDispatchIsRadioSimulatorPtr pRadio =
-            pAuto->GetSimulatorForRadio(0);
-
-        std::cout << "Got radio of frequency: " << pRadio->CenterFrequency << " KHz" << std::endl;
-
-        MyNotifier *pNotify = new MyNotifier();
-
-        IKnowDispatchIsCwSimulatorPtr pCwSidetone =
-            pAuto->GetCwSidetoneGenerator(pNotify);
-
-        if (!pCwSidetone)
+        catch (const std::exception &e)
         {
-            std::cout << "GetCwSidetoneGenerate returned empty!" << std::endl;
-            return;
+            std::cerr << "Caught exception " << e.what() << std::endl;
         }
+        catch (const _com_error &e)
+        {
+            std::cerr << "Caught COM exception " << e.ErrorMessage() << std::endl;
+        }
+    }
 
-        pCwSidetone->PutWPM(25);
-        pCwSidetone->QueueToTransmitText("test de w5xd");
-        pCwSidetone->QueueWpmChange(35);
-        pCwSidetone->QueueToTransmitText("test test w5xd");
-        ::MessageBox(0, "OK to exit", "SimClientTest", MB_OK);
-        pCwSidetone->AbortTransmission();
-        pNotify->Release();
-    }
-    catch (const std::exception &e)
+    int DemoSidetone(IKnowDispatchIsManagerPtr pMgr)
     {
-        std::cerr << "Caught exception " << e.what() << std::endl;
+            // Nothing here but sidetone generation
+            // Client of simulator can call its winkey emulation or call on
+            // its ICwSimulator, but its redundant to do both.
+            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
+            CComPtr<MyNotifier>pNotify = new MyNotifier();
+
+            IKnowDispatchIsCwSimulatorPtr pCwSidetone =
+                pMgr->GetCwSidetoneGenerator(pNotify);
+
+            if (!pCwSidetone)
+            {
+                std::cout << "GetCwSidetoneGenerate returned empty!" << std::endl;
+                return IDNO;
+            }
+
+            pCwSidetone->PutWPM(25);
+            pCwSidetone->QueueToTransmitText("test de w5xd");
+            pCwSidetone->QueueWpmChange(35);
+            pCwSidetone->QueueToTransmitText("test test w5xd");
+            int yesno = ::MessageBox(0, "Yes to continue, No to Exit", "SimClientTest", MB_YESNO);
+            pCwSidetone->AbortTransmission(); // if you OK fast enough, the transmission in progress will be aborted
+            return yesno;
     }
-    catch (const _com_error &e)
+
+    void DemoCwQso(IKnowDispatchIsManagerPtr pMgr)
     {
-        std::cerr << "Caught COM exception " << e.ErrorMessage() << std::endl;
+            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
+
+             // see if we can get the simulator to answer us
+            _bstr_t msg("CQ TEST DE W5XD");
+
+            // Demonstrate the timing sequence.
+            CComPtr<MyNotifier>pNotify = new MyNotifier(
+                // this callback happens when the CQ finishes..
+                // Will ALSO get call backs for WinKey-initiated message finished...
+                // should not support both.
+                    [pRadio, msg]() {
+                    pRadio->MessageCompletedNow("CW", msg); // tell the simulator our CQ is over
+                });
+
+            IKnowDispatchIsCwSimulatorPtr pCwSidetone = pMgr->GetCwSidetoneGenerator(pNotify);
+            pCwSidetone->PutWPM(25); // Lets do a typical contest CQ speed
+
+            for (;;)
+            {
+                pRadio->MessageStartedNow();
+                pCwSidetone->QueueToTransmitText(msg);
+                int yesno = ::MessageBox(0, "CQ again? No to Exit", "SimClientTest", MB_YESNO);
+                if (yesno == IDNO)
+                    break;
+            }
+   }
+
+    void DemoRtty(IKnowDispatchIsManagerPtr pMgr)
+    {
+            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
+
+            // tune the virtual radio to RTTY
+            // This demo would work on the simulator's default frequency, but
+            // this one is a more conventional RTTY frequency.
+            pRadio->SetListenFrequency(7080, "RY");
+
+             // see if we can get the simulator to answer us
+            _bstr_t msg("CQ TEST DE W5XD");
+
+            for (;;)
+            {
+                pRadio->MessageStartedNow();
+                bool stop = ::MessageBox(0, "Simulator thinks are sending RTTY now.\r\n OK to end the CQ (or cancel)", "SimClientTest", MB_YESNOCANCEL) != IDYES;
+                if (stop)
+                    break;
+                pRadio->MessageCompletedNow("RY", msg);  // we call CQ in RTTY mode...the simulator may answer
+                stop = ::MessageBox(0, "Again?", "SimClientTest", MB_YESNO) != IDYES;
+
+            }
+
     }
+
 }

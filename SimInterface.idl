@@ -44,9 +44,9 @@ dispinterface ICwSidetoneSimulator{
 dispinterface ICwSidetoneNotify{
     properties:
     methods:
-    [id(101), helpstring("Called when the sidetone generate is queued")] 
+    [id(1), helpstring("Called when the sidetone generate is queued")] 
     void CwQueued([in] LONG MessageId);
-    [id(102), helpstring("Called when the sidetone generate for SendCW finishes")] 
+    [id(2), helpstring("Called when the sidetone generate for SendCW finishes")] 
     void CwFinished([in] LONG MessageId, [in] BSTR TextSent);
 };
 

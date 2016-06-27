@@ -1,13 +1,18 @@
 #pragma once
+#include <functional>
+static const DISPID CwQueuedDISPID(1);
+static const DISPID CwFinishedDISPID(2);
 
 // minimal implementation of ICwSidetoneNotify
-static const DISPID CwQueuedDISPID(101);
-static const DISPID CwFinishedDISPID(102);
-
+// The simulator calls this IDispatch implementation
+// while its running CW sidetone
 class MyNotifier : public IDispatch
 {
 public:
-    MyNotifier() : m_RefCount(1)
+    MyNotifier(const std::function<void()> &doneFcn = [](){})
+        : m_RefCount(0)
+        , m_lastMessageStarted(0)
+        , m_doneFcn(doneFcn)
     {    }
 
     HRESULT STDMETHODCALLTYPE QueryInterface(
@@ -30,18 +35,30 @@ public:
     {        return ++m_RefCount;    }
 
     ULONG STDMETHODCALLTYPE Release(void)
-    {        return --m_RefCount;    }
+    {    
+        ULONG ret = --m_RefCount;   
+        if (ret == 0)
+            delete this;
+        return ret;
+    }
 
-    HRESULT STDMETHODCALLTYPE GetTypeInfoCount( UINT *pctinfo)  {        return E_NOTIMPL;    }
+    HRESULT STDMETHODCALLTYPE GetTypeInfoCount( UINT *pctinfo)  {
+        return E_NOTIMPL;    }
 
     HRESULT STDMETHODCALLTYPE GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
     {        return E_NOTIMPL;    }
 
     HRESULT STDMETHODCALLTYPE GetIDsOfNames(
-        REFIID riid, LPOLESTR *rgszNames, UINT cNames, ULONG lcid,
+        REFIID , LPOLESTR *rgszNames, UINT cNames, ULONG lcid,
         DISPID *rgDispId)
     {
-        return E_NOTIMPL;
+        if (_wcsicmp(rgszNames[0], L"CwQueued") == 0)
+            rgDispId[0] = CwQueuedDISPID;
+        else  if (_wcsicmp(rgszNames[0], L"CwFinished") == 0)
+            rgDispId[0] = CwFinishedDISPID;
+        else
+            return DISP_E_UNKNOWNNAME;
+        return S_OK;;
     }
 
     HRESULT STDMETHODCALLTYPE Invoke(
@@ -57,6 +74,7 @@ public:
             if (pDispParams->rgvarg[0].vt != VT_I4)
                 return E_INVALIDARG;
             int messageId = pDispParams->rgvarg[0].intVal;
+            m_lastMessageStarted = messageId;
             std::cout << "Nofication received that message " << messageId << " queued." << std::endl;
         }
         else if (dispIdMember == CwFinishedDISPID)
@@ -71,6 +89,8 @@ public:
             int messageId = pDispParams->rgvarg[1].intVal;
             std::wstring asSent(pDispParams->rgvarg[0].bstrVal);
             std::wcout << L"Nofication received that message " << messageId << L" finished: " << asSent << std::endl;
+            if ((messageId >= m_lastMessageStarted) && m_doneFcn)
+                m_doneFcn();
         }
         else 
             return E_INVALIDARG;
@@ -78,4 +98,6 @@ public:
     }
 
     ULONG m_RefCount;
+    int m_lastMessageStarted;
+    std::function<void()> m_doneFcn;
 };
