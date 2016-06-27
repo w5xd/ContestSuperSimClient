@@ -70,12 +70,19 @@ namespace
 
             DemoCwQso(pMgr);
 
+            // Why does this demo switch back and forth between using cout/cin and 
+            // MessageBox?
+            // The distinction is important because we called CoInitialize(0); (way
+            // back in the first line in main).
+            // We won't get any COM callbacks while stuck reading cin. But we
+            // will if we're in MessageBox. 
+            // That difference is important to the simulator for only one scenario:
+            // when you pass a non-null argument to GetCwSidetoneGenerator()
+            // The object you pass will only get called through a Windows message
             yesno = ::MessageBox(0, "Try RTTY?", "SimClientTest", MB_YESNO);
 
             if (yesno == IDYES)
-            {
                 DemoRtty(pMgr);
-            }
 
         }
         catch (const std::exception &e)
