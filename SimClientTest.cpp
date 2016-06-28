@@ -1,4 +1,9 @@
-// SimClientTest.cpp : Defines the entry point for the console application.
+// Sample code that calls the Contest Super Simulator. 
+// There are three basic things we do here:
+// a) simulate calling CQ in CW in a way that propts the Simulator to answer
+// b) the same in RTTY
+// c) Get the simulator to generate CW sidetone showing an alternative to
+// the simulator's built-in WinKey emulation.
 //
 #include <string>
 #include <atlbase.h>
@@ -9,9 +14,9 @@
 
 namespace {
     void DoWithCOM();
-    int DemoSidetone(IKnowDispatchIsManagerPtr pMgr);
     void DemoCwQso(IKnowDispatchIsManagerPtr pMgr);
     void DemoRtty(IKnowDispatchIsManagerPtr pMgr);
+    int DemoSidetone(IKnowDispatchIsManagerPtr pMgr);
 }
 
 int main(int argc, char* argv[])
@@ -95,32 +100,6 @@ namespace
         }
     }
 
-    int DemoSidetone(IKnowDispatchIsManagerPtr pMgr)
-    {
-            // Nothing here but sidetone generation
-            // Client of simulator can call its winkey emulation or call on
-            // its ICwSimulator, but its redundant to do both.
-            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
-            CComPtr<MyNotifier>pNotify = new MyNotifier();
-
-            IKnowDispatchIsCwSimulatorPtr pCwSidetone =
-                pMgr->GetCwSidetoneGenerator(pNotify);
-
-            if (!pCwSidetone)
-            {
-                std::cout << "GetCwSidetoneGenerate returned empty!" << std::endl;
-                return IDNO;
-            }
-
-            pCwSidetone->PutWPM(25);
-            pCwSidetone->QueueToTransmitText("test de w5xd");
-            pCwSidetone->QueueWpmChange(35);
-            pCwSidetone->QueueToTransmitText("test test w5xd");
-            int yesno = ::MessageBox(0, "Yes to continue, No to Exit", "SimClientTest", MB_YESNO);
-            pCwSidetone->AbortTransmission(); // if you OK fast enough, the transmission in progress will be aborted
-            return yesno;
-    }
-
     void DemoCwQso(IKnowDispatchIsManagerPtr pMgr)
     {
             IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
@@ -165,7 +144,7 @@ namespace
             for (;;)
             {
                 pRadio->MessageStartedNow();
-                bool stop = ::MessageBox(0, "Simulator thinks are sending RTTY now.\r\n OK to end the CQ (or cancel)", "SimClientTest", MB_YESNOCANCEL) != IDYES;
+                bool stop = ::MessageBox(0, "Simulator thinks you are sending RTTY now.\r\n OK to end the CQ (or cancel)", "SimClientTest", MB_YESNOCANCEL) != IDYES;
                 if (stop)
                     break;
                 pRadio->MessageCompletedNow("RY", msg);  // we call CQ in RTTY mode...the simulator may answer
@@ -175,4 +154,29 @@ namespace
 
     }
 
+    int DemoSidetone(IKnowDispatchIsManagerPtr pMgr)
+    {
+            // Nothing here but sidetone generation
+            // Client of simulator can call its winkey emulation or call on
+            // its ICwSimulator, but its redundant to do both.
+            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
+            CComPtr<MyNotifier>pNotify = new MyNotifier();
+
+            IKnowDispatchIsCwSimulatorPtr pCwSidetone =
+                pMgr->GetCwSidetoneGenerator(pNotify);
+
+            if (!pCwSidetone)
+            {
+                std::cout << "GetCwSidetoneGenerate returned empty!" << std::endl;
+                return IDNO;
+            }
+
+            pCwSidetone->PutWPM(25);
+            pCwSidetone->QueueToTransmitText("test de w5xd");
+            pCwSidetone->QueueWpmChange(35);
+            pCwSidetone->QueueToTransmitText("test test w5xd");
+            int yesno = ::MessageBox(0, "Yes to continue, No to Exit", "SimClientTest", MB_YESNO);
+            pCwSidetone->AbortTransmission(); // if you OK fast enough, the transmission in progress will be aborted
+            return yesno;
+    }
 }

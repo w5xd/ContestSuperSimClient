@@ -1,17 +1,12 @@
 /* I hope nobody really wants to call the Contest Super Simulator 
-** from the Windows Scripting Host...but this is to show that it
-** can be done.
+** from the Windows Scripting Host...but this is to show that the
+** simulator's interface is easy to use. All the objects do
+** old, simple, late-binding COM automation.
 **
-** Scripting can't seem to directly call Win32 GetActiveObject
+** The opening is different from the C++ example because
+** WScript can't seem to directly call Win32 GetActiveObject
 ** so use ContestSuperSimulator.ActiveSimulator to get it.
-** GetActiveObject requires no admin or installation. But the
-** ScriptHelper, by contrast, must be installed for WScript.CreateObject 
-** to find it.
 ** 
-** If this create object fails, check to see if the Contest Super Simulator's
-** ScriptHelper.dll is registered, and the one for the correct
-** OS.  (64b versus 32b). No harm registering the "other" one, but
-** no help, either.
 */
 var helper = WScript.CreateObject("ContestSuperSimulator.ActiveSimulator");
 var manager = helper.Current;
