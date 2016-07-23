@@ -16,6 +16,11 @@ interface __declspec(uuid("00020400-0000-0000-C000-000000000046"))
 _COM_SMARTPTR_TYPEDEF(IKnowDispatchIsCwSimulator,  __uuidof(IKnowDispatchIsCwSimulator));
 
 interface __declspec(uuid("00020400-0000-0000-C000-000000000046"))
+    IKnowDispatchIsStationList : ContestSuperSimDispLib::IStationList
+{};
+_COM_SMARTPTR_TYPEDEF(IKnowDispatchIsStationList,  __uuidof(IKnowDispatchIsStationList));
+
+interface __declspec(uuid("00020400-0000-0000-C000-000000000046"))
     IKnowDispatchIsRadioSimulator : ContestSuperSimDispLib::IRadioSimulator
 {};
 _COM_SMARTPTR_TYPEDEF(IKnowDispatchIsRadioSimulator,  __uuidof(IKnowDispatchIsRadioSimulator));

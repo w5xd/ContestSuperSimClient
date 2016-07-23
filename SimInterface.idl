@@ -2,7 +2,10 @@ import "oaidl.idl";
 import "ocidl.idl";
 
 /* Generate a typelib that matches what's in the C# application 
-** ContestSuperSimulator */
+** ContestSuperSimulator 
+**
+** These interfaces are hand-matched to the C# application source code.
+*/
 
 [
 	nonextensible,
@@ -51,6 +54,26 @@ dispinterface ICwSidetoneNotify{
 };
 
 [
+	uuid(EED8FD39-6970-4A97-B243-ECDEB952894A),
+	nonextensible,
+    helpstring("Description of contestants currently being simulated")
+]
+dispinterface IStationList{
+    properties:
+    methods:
+    [id(101), propget, helpstring("Number of stations")]
+    int Count();
+    [id(102), propget, helpstring("PH or CW or RY")] 
+    BSTR ModulationMode(short idx);
+    [id(103), propget, helpstring("Station callsign")] 
+    BSTR Callsign(short idx);
+    [id(104), propget, helpstring("SP or CQ for Search & Pounce or CQing")] 
+    BSTR SpOrCq(short idx);
+    [id(105), propget, helpstring("frequency of station in KHz")] 
+    double FreqKhz(short idx);
+};
+
+[
 	uuid(A3685033-37A3-4111-A1C0-99409BE6AB40),
 	nonextensible,
     helpstring("Logger tells the simulator what its doing to the Radio")
@@ -65,13 +88,15 @@ dispinterface IRadioSimulator{
     [id(102), propget]
     DOUBLE CenterFrequency();
     [id(103), helpstring("Logger can tell the simulator to tune. Modes are CW PH RY")]
-    void SetListenFrequency( [in] DOUBLE KHz, [in] BSTR mode);
+    void SetListenFrequency( [in] DOUBLE KHz, [in] BSTR ModulationMode);
     [id(104), helpstring("am transmitting now (not listening) on this radio")]
     void MessageStartedNow();
     [id(105), helpstring("Logger tells simulator what was transmitted and when it finished")]
-    void MessageCompletedNow( [in] BSTR Mode, [in] BSTR MessageText);
+    void MessageCompletedNow( [in] BSTR ModulationMode, [in] BSTR MessageText);
     [id(106), helpstring("Logger tells simulator this radio has TX focus")]
     void HaveTransmitFocus();
+    [id(107), propget, helpstring("List of active stations")]
+    IDispatch *SimulatedStations();
 };
 
 [
@@ -83,6 +108,8 @@ library ContestSuperSimDispLib
     dispinterface IRadioSimulator;
     dispinterface ICwSidetoneSimulator;
     dispinterface ICwSidetoneNotify;
+    dispinterface IStationList;
+
 	[
 		uuid(3C9EA92A-FBEF-4746-8805-6379EA13E713)		
 	]

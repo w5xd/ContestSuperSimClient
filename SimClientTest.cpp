@@ -17,6 +17,7 @@ namespace {
     void DemoCwQso(IKnowDispatchIsManagerPtr pMgr);
     void DemoRtty(IKnowDispatchIsManagerPtr pMgr);
     int DemoSidetone(IKnowDispatchIsManagerPtr pMgr);
+    void DemoGetStations(IKnowDispatchIsManagerPtr pMgr);
 }
 
 int main(int argc, char* argv[])
@@ -88,6 +89,8 @@ namespace
 
             if (yesno == IDYES)
                 DemoRtty(pMgr);
+
+            DemoGetStations(pMgr);
 
         }
         catch (const std::exception &e)
@@ -178,5 +181,22 @@ namespace
             int yesno = ::MessageBox(0, "Yes to continue, No to Exit", "SimClientTest", MB_YESNO);
             pCwSidetone->AbortTransmission(); // if you OK fast enough, the transmission in progress will be aborted
             return yesno;
+    }
+
+    void DemoGetStations(IKnowDispatchIsManagerPtr pMgr)
+    {
+            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
+            if (pRadio)
+            {
+                IKnowDispatchIsStationListPtr pStations = pRadio->GetSimulatedStations();
+                int count = pStations->Count;
+                for (int i = 0; i < count; i++)
+                {
+                    std::cout << "Contestant " << static_cast<char *>(pStations->GetCallsign(i)) <<
+                        " " << static_cast<char *>(pStations->GetModulationMode(i)) <<
+                        " " << static_cast<char *>(pStations->GetSpOrCq(i)) <<
+                        " " << pStations->GetFreqKhz(i) << std::endl;
+                }
+            }
     }
 }
