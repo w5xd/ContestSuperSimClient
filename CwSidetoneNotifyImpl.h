@@ -4,8 +4,9 @@ static const DISPID CwQueuedDISPID(1);
 static const DISPID CwFinishedDISPID(2);
 
 // minimal implementation of ICwSidetoneNotify
-// The simulator calls this IDispatch implementation
-// while its running CW sidetone
+// The simulator calls this IDispatch implementation while its running CW sidetone
+// Clients need to implement this to send CW only if they do NOT use the 
+// simulator's WinKey over named pipes.
 class MyNotifier : public IDispatch
 {
 public:
