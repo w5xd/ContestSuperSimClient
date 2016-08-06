@@ -1,9 +1,11 @@
 // Sample code that calls the Contest Super Simulator. 
-// There are three basic things we do here:
-// a) simulate calling CQ in CW in a way that propts the Simulator to answer
+// There are basic things we do here:
+// a) simulate calling CQ in CW in a way that propts the Simulator to answer, 
+//    showing how to do it without WinKey
 // b) the same in RTTY
 // c) Get the simulator to generate CW sidetone showing an alternative to
-// the simulator's built-in WinKey emulation.
+//    the simulator's built-in WinKey emulation.
+// d) Get the simulator's CQing station list. Useful to populate a Band Map
 //
 #include <string>
 #include <atlbase.h>
@@ -42,11 +44,11 @@ namespace
             // If we used an admin install of the interfaces, we could make
             // Windows "marshall" the above interfaces..
             // 
-            // But they are just IDispatch which has a built-in marshaller. Sowe just use 
+            // But they are just IDispatch which has a built-in marshaller. Use 
             // some goop in SimInterfaceHelper.h to convince the Microsoft C++ compiler to 
             // attach its IDispatch helpers to an unaddorned IDispatch interface.
 
-            // The simulator manager registers itself in the ROT when the user runs it.
+            // The simulator manager registers itself in the Windows ROT when the user runs it.
             IKnowDispatchIsManagerPtr        pMgr;
             pMgr.GetActiveObject(__uuidof(ContestSuperSimDispLib::SuperSimManager));
 
@@ -63,7 +65,7 @@ namespace
                                                             0   /* zero-based index of radio number */
                                                             );
 
-            // The simulator puts its virtual radios on frequencies of its own choosing. See what that is:
+            // The simulator initializes its virtual radios on frequencies of its own choosing. See what that is:
             std::cout << "Got radio of frequency: " << pRadio->CenterFrequency << " KHz. ENTER to continue" << std::endl;
             std::cin.read(&c, 1);
 
@@ -78,10 +80,10 @@ namespace
 
             // Why does this demo switch back and forth between using cout/cin and 
             // MessageBox?
-            // The distinction is important because we called CoInitialize(0); (way
-            // back in the first line in main).
-            // We won't get any COM callbacks while stuck reading cin. But we
-            // will if we're in MessageBox. 
+            // The distinction is important because we called CoInitialize(0);
+            // back in the first line in main) and we expect callbacks.
+            // We won't get any COM callbacks while blocked reading cin. But we
+            // will if we're in MessageBox. (this is how COM does single threaded apartments)
             // That difference is important to the simulator for only one scenario:
             // when you pass a non-null argument to GetCwSidetoneGenerator()
             // The object you pass will only get called through a Windows message
@@ -147,14 +149,15 @@ namespace
             for (;;)
             {
                 pRadio->MessageStartedNow();
-                bool stop = ::MessageBox(0, "Simulator thinks you are sending RTTY now.\r\n OK to end the CQ (or cancel)", "SimClientTest", MB_YESNOCANCEL) != IDYES;
+                bool stop = ::MessageBox(0, 
+                    "Simulator thinks you are sending RTTY now.\r\n OK to end the CQ (or cancel)", 
+                    "SimClientTest", MB_YESNOCANCEL) != IDYES;
                 if (stop)
                     break;
                 pRadio->MessageCompletedNow("RY", msg);  // we call CQ in RTTY mode...the simulator may answer
                 stop = ::MessageBox(0, "Again?", "SimClientTest", MB_YESNO) != IDYES;
 
             }
-
     }
 
     int DemoSidetone(IKnowDispatchIsManagerPtr pMgr)
