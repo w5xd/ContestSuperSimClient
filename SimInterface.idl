@@ -4,8 +4,7 @@ import "ocidl.idl";
 /* Generate a typelib that matches what's in the C# application 
 ** ContestSuperSimulator 
 **
-** These interfaces are hand-matched to the C# application source code.
-*/
+** These interfaces are matched with the C# application source code.*/
 
 [
 	nonextensible,
@@ -81,21 +80,21 @@ dispinterface IStationList{
 dispinterface IRadioSimulator{
     properties:
     methods:
-    [id(101), propput, helpstring("This radio's audio goes to audio channels by mask")] 
+    [id(101), propput, helpstring("This radio's audio goes to audio channel mask. 0=off, 1=left, 2=right, 3=both")] 
     void HeadphoneMask([in] SHORT ChannelMask_LeftIsLsb);
     [id(102), propput, helpstring("Logger can tell the simulator the virtual IF center.")]
     void CenterFrequency( [in] DOUBLE KHz);
     [id(102), propget]
     DOUBLE CenterFrequency();
-    [id(103), helpstring("Logger can tell the simulator to tune. Modes are CW PH RY")]
+    [id(103), helpstring("Logger can tell the simulator to tune. Accepted Modes are CW PH RY")]
     void SetListenFrequency( [in] DOUBLE KHz, [in] BSTR ModulationMode);
     [id(104), helpstring("am transmitting now (not listening) on this radio")]
     void MessageStartedNow();
     [id(105), helpstring("Logger tells simulator what was transmitted and when it finished")]
     void MessageCompletedNow( [in] BSTR ModulationMode, [in] BSTR MessageText);
-    [id(106), helpstring("Logger tells simulator this radio has TX focus")]
+    [id(106), helpstring("Logger tells simulator this radio has TX focus. Implied by MessageStartedNow")]
     void HaveTransmitFocus();
-    [id(107), propget, helpstring("List of active stations")]
+    [id(107), propget, helpstring("List of active stations as IStationList *")]
     IDispatch *SimulatedStations();
 };
 

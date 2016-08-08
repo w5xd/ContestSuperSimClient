@@ -61,8 +61,11 @@ namespace
             }
 
             // The manager object provides access to the virtual radio objects.
+            short radioIdx = 0; /* zero-based index of radio number */
+            // The simulator launches some CPU-intensive work for every radioIdx. 
+            // ...and the simulator offers no way to shut down a virtual radio, once started this way.
             IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(
-                                                            0   /* zero-based index of radio number */
+                                                            radioIdx   
                                                             );
 
             // The simulator initializes its virtual radios on frequencies of its own choosing. See what that is:
@@ -105,6 +108,8 @@ namespace
         }
     }
 
+    /* This programming sequence is an alternative to using the simulator's
+    ** WinKey emulation.    */
     void DemoCwQso(IKnowDispatchIsManagerPtr pMgr)
     {
             IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
@@ -116,7 +121,7 @@ namespace
             CComPtr<MyNotifier>pNotify = new MyNotifier(
                 // this callback happens when the CQ finishes..
                 // Will ALSO get call backs for WinKey-initiated message finished...
-                // should not support both.
+                // Client should choose one or the other
                     [pRadio, msg]() {
                     pRadio->MessageCompletedNow("CW", msg); // tell the simulator our CQ is over
                 });
@@ -136,30 +141,34 @@ namespace
 
     void DemoRtty(IKnowDispatchIsManagerPtr pMgr)
     {
-            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
+        IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
 
-            // tune the virtual radio to RTTY
-            // This demo would work on the simulator's default frequency, but
-            // this one is a more conventional RTTY frequency.
-            pRadio->SetListenFrequency(7080, "RY");
+        // tune the virtual radio to RTTY
+        // This demo would work on the simulator's default frequency, but
+        // this one is a more conventional RTTY frequency.
+        // SetListenFrequency is the key for "tuning" the simulator through its
+        // virtual bands on CW as well as RTTY.
+        pRadio->SetListenFrequency(7080, "RY");
 
-             // see if we can get the simulator to answer us
-            _bstr_t msg("CQ TEST DE W5XD");
+            // see if we can get the simulator to answer us
+        _bstr_t msg("CQ TEST DE W5XD");
 
-            for (;;)
-            {
-                pRadio->MessageStartedNow();
-                bool stop = ::MessageBox(0, 
-                    "Simulator thinks you are sending RTTY now.\r\n OK to end the CQ (or cancel)", 
-                    "SimClientTest", MB_YESNOCANCEL) != IDYES;
-                if (stop)
-                    break;
-                pRadio->MessageCompletedNow("RY", msg);  // we call CQ in RTTY mode...the simulator may answer
-                stop = ::MessageBox(0, "Again?", "SimClientTest", MB_YESNO) != IDYES;
-
-            }
+        /* the drill of calling MessageStartedNow and MessageCompletedNow is shown for RTTY,
+        ** but can be used on CW as an alternative to WinKey*/
+        for (;;)
+        {
+            pRadio->MessageStartedNow();
+            bool stop = ::MessageBox(0, 
+                "Simulator thinks you are sending RTTY now.\r\n OK to end the CQ (or cancel)", 
+                "SimClientTest", MB_YESNOCANCEL) != IDYES;
+            if (stop)
+                break;
+            pRadio->MessageCompletedNow("RY", msg);  // we call CQ in RTTY mode...the simulator may answer
+            stop = ::MessageBox(0, "Again?", "SimClientTest", MB_YESNO) != IDYES;
+        }
     }
 
+    // an alternative to just using the simulator's WinKey emulation
     int DemoSidetone(IKnowDispatchIsManagerPtr pMgr)
     {
             // Nothing here but sidetone generation
@@ -188,18 +197,23 @@ namespace
 
     void DemoGetStations(IKnowDispatchIsManagerPtr pMgr)
     {
-            IKnowDispatchIsRadioSimulatorPtr pRadio =  pMgr->GetSimulatorForRadio(0);
-            if (pRadio)
+        /* Client might, for example, populate a Band Map with the info it gets here    */
+        short radioNumber = 0;
+        // the simulator will launch some CPU-intensive tasks on GetSimulatorForRadio.
+        // So only ask it for radios that you want to pay the price for simulation.
+        // The simulator does not offer a way to shut down a simulated radio once started.
+        IKnowDispatchIsRadioSimulatorPtr pRadio = pMgr->GetSimulatorForRadio(radioNumber);
+        if (pRadio)
+        {
+            IKnowDispatchIsStationListPtr pStations = pRadio->GetSimulatedStations();
+            int count = pStations->Count;
+            for (int i = 0; i < count; i++)
             {
-                IKnowDispatchIsStationListPtr pStations = pRadio->GetSimulatedStations();
-                int count = pStations->Count;
-                for (int i = 0; i < count; i++)
-                {
-                    std::cout << "Contestant " << static_cast<char *>(pStations->GetCallsign(i)) <<
-                        " " << static_cast<char *>(pStations->GetModulationMode(i)) <<
-                        " " << static_cast<char *>(pStations->GetSpOrCq(i)) <<
-                        " " << pStations->GetFreqKhz(i) << std::endl;
-                }
+                std::cout << "Contestant " << static_cast<char *>(pStations->GetCallsign(i)) <<
+                    " " << static_cast<char *>(pStations->GetModulationMode(i)) <<
+                    " " << static_cast<char *>(pStations->GetSpOrCq(i)) <<
+                    " " << pStations->GetFreqKhz(i) << std::endl;
             }
+        }
     }
 }
