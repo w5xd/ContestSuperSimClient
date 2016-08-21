@@ -96,6 +96,8 @@ dispinterface IRadioSimulator{
     void HaveTransmitFocus();
     [id(107), propget, helpstring("List of active stations as IStationList *")]
     IDispatch *SimulatedStations();
+    [id(108), propget, helpstring("Bandwidth, in kHz, of the simulation")]
+    double BandWidthKhz();
 };
 
 [
