@@ -26,6 +26,30 @@ int main(int argc, char* argv[])
 {
     ::CoInitialize(0);
     DoWithCOM();    // COM objects must be released BEFORE CoUninitialize
+
+    /* A word about how the "rules of COM" affect plumbing an existing application to 
+    ** interface with the Contest Super Simulator.
+    **
+    ** The calls to the CSS are out-of-apartment COM calls, and therefore cannot be called
+    ** by code that is itself dispatched by Windows SendMessage. 
+    ** What might that mean? First a word about what does work OK:
+    ** Windows GUI and Timer events in most applications typically appear in DispatchEvents
+    ** via PostMessage. That sequence is acceptable to COM.
+    **
+    ** But a special case that does not work is, say, a mouse pad driver that
+    ** uses SendMessage to convert finger gestures to WM_VSCROLL,WM_HSCROLL. Putting one
+    ** of these COM calls in a WM_VSCROLL handler, for example, results in code that
+    ** works sometimes and not others--depending on whether the events originated in
+    ** a keyboard or mouse interaction with an HWND (which works) or a finger gesture
+    ** on a mouse pad (which does not).
+    **
+    ** One way to be sure these COM calls always work is to dedicate a WM_COMMAND handler
+    ** and, wherever in the application the need arises to call CSS via COM, use PostMessage
+    ** to get to the code that calls CSS.
+    **
+    ** A more technical, related issue is described here:
+    ** http://stackoverflow.com/questions/8839195/an-outgoing-call-cannot-be-made-since-the-application-is-dispatching-an-input-sy#8845340
+    */
     ::CoUninitialize();
 	return 0;
 }
