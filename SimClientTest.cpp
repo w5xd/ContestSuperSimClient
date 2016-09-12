@@ -152,11 +152,13 @@ namespace
 
             IKnowDispatchIsCwSimulatorPtr pCwSidetone = pMgr->GetCwSidetoneGenerator(pNotify);
             pCwSidetone->PutWPM(25); // Lets do a typical contest CQ speed
-
+            short sidetoneMask = 3;
             for (;;)
             {
                 pRadio->MessageStartedNow();
                 pCwSidetone->QueueToTransmitText(msg);
+                pCwSidetone->PutHeadphoneMask(sidetoneMask); // The HeadphoneMask property is supported only CSS 1.8 and later
+                sidetoneMask = (sidetoneMask % 3) + 1;
                 int yesno = ::MessageBox(0, "CQ again? No to Exit", "SimClientTest", MB_YESNO);
                 if (yesno == IDNO)
                     break;

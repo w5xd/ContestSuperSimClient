@@ -36,6 +36,8 @@ dispinterface ICwSidetoneSimulator{
     void WPM([in] SHORT WPM);
     [id(104), helpstring("Abort any CW message in progress")] 
     void AbortTransmission();
+    [id(105), propput, helpstring("audio channel mask. 0=off, 1=left, 2=right, 3=both")] 
+    void HeadphoneMask([in] SHORT ChannelMask_LeftIsLsb);
 };
 
 [
