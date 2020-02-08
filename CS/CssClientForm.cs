@@ -19,6 +19,9 @@ namespace CSSclient
             try
             {
                 cssManager = new CSS();
+                textBoxCallUsed.Text = cssManager.CallUsed;
+                comboBoxContestSelection.SelectedItem = cssManager.ContestSelection;
+
             }
             catch (System.Exception exc)
             {
@@ -155,6 +158,11 @@ namespace CSSclient
                     stations.GetCallsign(i), stations.GetModulationMode(i), stations.GetSpOrCq(i), stations.GetFreqKhz(i) ));
 #endif
             }
+        }
+
+        private void buttonUpdate_Click(object sender, EventArgs e)
+        {
+             cssManager.SetContestAndCall(comboBoxContestSelection.SelectedItem.ToString(), textBoxCallUsed.Text);
         }
     }
 }

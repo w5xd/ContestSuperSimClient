@@ -172,6 +172,39 @@ namespace CSSclient
         {
             return new CwSideToneSimulator(cssType.InvokeMember("GetCwSidetoneGenerator", BindingFlags.InvokeMethod, null, css, new object[1] { notify }));
         }
+
+        public ushort SideToneVolume { get { 
+                return (ushort)cssType.InvokeMember("SideToneVolume", BindingFlags.GetProperty, null, css, null);
+                } set {
+                cssType.InvokeMember("SideToneVolume", BindingFlags.SetProperty, null, css, new object[1] { value });
+                } 
+            }
+
+        // methods introduced in css 1.15
+        // CallUsed and ContestSelection properties are read-only.
+        // SetContestAndCall changes both of them at once.
+        public string CallUsed {
+            get {
+                // throws an exception on CSS prior to version 1.15
+                return (string)cssType.InvokeMember("CallUsed", BindingFlags.GetProperty, null, css, null);
+            }
+        }
+
+        public string ContestSelection {
+            get {
+                // throws an exception on CSS prior to version 1.15
+                return (string)cssType.InvokeMember("ContestSelection", BindingFlags.GetProperty, null, css, null);
+            }
+        }
+
+        public void SetContestAndCall(string rules, string callused)
+        {
+            // throws an exception on CSS prior to version 1.15
+            cssType.InvokeMember("SetContestAndCall", BindingFlags.InvokeMethod, null, css, new object[2] { rules, callused });
+            // throws an exception on invalid rules settings. Valid are:
+            //  "Simple", "WPX", "ARRL SS", and "IARU HF"
+        }
+
     }
 
     // Any public class with the appropriate ComVisible attributes, DispId's and method signatures is OK for GetCwSidetoneGenerator
